@@ -326,12 +326,14 @@ A named env is a separate agent home managed by gentle-shell under `~/.gentle-sh
 
 | Command | Effect |
 | --- | --- |
-| `gentle-shell envs` | Same as `envs list`. |
+| `gentle-shell envs` | On a terminal, opens a full-screen env manager. Without a TTY, it behaves like `envs list`. |
 | `gentle-shell envs list` | Prints every env and its setup state; `*` marks the default. |
 | `gentle-shell envs new <name>` | Creates the env without launching it. Its first launch installs the companion packages, the same as any new `--home`. |
 | `gentle-shell --env <name> [...]` | Launches, sets up (`--env <name> setup`), or runs pi subcommands (`--env <name> install npm:x`) in that env. |
 
-The default env is stored as the ordinary persisted `home` path, so a plain `gentle-shell` opens it, and `gentle-shell home link|isolated|<path>` replaces it. Envs are separate homes, not sandboxes. They share the repository you work in, `~/.pi/gentle-ai/persona.json`, and `~/.gentle-ai/state.json`, like every other home. `self-uninstall` does not remove `~/.gentle-shell/envs`.
+Manager keys: `↑`/`↓` or `j`/`k` select. `enter` launches the selected env. `n` creates an env, `r` renames it, and `d` deletes it after you type its name. `s` makes it the default. `p` runs `setup`, `i` installs a package source, and `a` runs `pi auth check` for each signed-in provider. `q` or `esc` quits. The detail pane shows the path, the setup record, the session count and last session, the signed-in provider ids (never credential values), and the declared packages.
+
+The default env is stored as the ordinary persisted `home` path, so a plain `gentle-shell` opens it, and `gentle-shell home link|isolated|<path>` replaces it. Renaming or deleting an env keeps `config.json` consistent: its setup record and default follow it or are removed. Envs are separate homes, not sandboxes. They share the repository you work in, `~/.pi/gentle-ai/persona.json`, and `~/.gentle-ai/state.json`, like every other home. `self-uninstall` does not remove `~/.gentle-shell/envs`.
 
 ### Managing packages
 
