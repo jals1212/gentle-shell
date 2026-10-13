@@ -294,6 +294,7 @@ An orphan branch with commits and no parent has no branch point to name as `base
 ```bash
 gentle-shell [options] [-- pi-args...]
 gentle-shell home [link|isolated|<path>]
+gentle-shell envs [list | new <name>]
 gentle-shell [home selectors] setup [--dry-run]
 gentle-shell upgrade [--channel release|main]
 gentle-shell upgrade --rollback
@@ -307,16 +308,30 @@ gentle-shell self-uninstall [--dry-run] [--yes] [--include-shared]
 | `--link` | Home is your own pi home: `GENTLE_SHELL_USER_PI_HOME` when a Gentle Shell session recorded it (so `--link` run from inside an isolated session reaches your original pi, not the isolated home), otherwise `PI_CODING_AGENT_DIR` or `~/.pi/agent`. Reuses your existing pi sign-ins, models, and chats; never writes to its `settings.json`. |
 | `--isolated` | Home is `GENTLE_SHELL_HOME` or `~/.gentle-shell/agent`. No credential seeding. Default when nothing else is configured. |
 | `--home <path>` | Home is the given directory. |
+| `--env <name>` | Home is the named env `GENTLE_SHELL_ENVS_DIR/<name>` (default `~/.gentle-shell/envs/<name>`). The env must already exist; an unknown name exits 2 instead of creating a new home. See "Named envs" below. |
 | `--package-root <dir>` | Force this directory as the gentle-pi package to load, taking over from any conflicting package the target `settings.json` already declares (see "Loading the package" below). |
 | `--help`, `-h` | Print usage (flags, commands, env vars) and exit 0. |
 | `--version` | Print `gentle-shell <version>`, `pi <version>`, and `home <mode> <dir>`, then exit 0. |
 | `--` | Everything after is forwarded to pi verbatim, even text that looks like a `gentle-shell` flag. |
 
-`--link`, `--isolated`, and `--home` are mutually exclusive; combining two is a usage error, as is `--home` or `--home=` with an empty value. Effective-home precedence: an explicit flag wins, then the persisted `home` subcommand choice, then the `--isolated` default. Every argument gentle-shell does not recognize — `--mode rpc`, `-p "..."`, etc. — is forwarded to pi unchanged.
+`--link`, `--isolated`, `--home`, and `--env` are mutually exclusive; combining two is a usage error, as is `--home` or `--home=` with an empty value. Effective-home precedence: an explicit flag wins, then the persisted `home` subcommand choice, then the `--isolated` default. Every argument gentle-shell does not recognize — `--mode rpc`, `-p "..."`, etc. — is forwarded to pi unchanged.
 
 ### `home` subcommand and `~/.gentle-shell/config.json`
 
 `gentle-shell home` alone prints the effective mode and directory (`<mode> <dir>`) without persisting anything. `gentle-shell home link`, `gentle-shell home isolated`, or `gentle-shell home <path>` persists that choice to `~/.gentle-shell/config.json` as `{"home": "link" | "isolated" | "<path>"}`, so a later plain `gentle-shell` picks it up; a flag on a given invocation still overrides the persisted config without rewriting it.
+
+### Named envs (`envs` subcommand, `--env`)
+
+A named env is a separate agent home managed by gentle-shell under `~/.gentle-shell/envs/<name>/` (`GENTLE_SHELL_ENVS_DIR` overrides the root). Each env has its own sign-ins, models, packages, settings, sessions, and subagent history. The directory is the registry: there is no separate list. Names are 1-40 lowercase letters, digits, `.`, `_`, or `-`, starting with a letter or digit.
+
+| Command | Effect |
+| --- | --- |
+| `gentle-shell envs` | Same as `envs list`. |
+| `gentle-shell envs list` | Prints every env and its setup state; `*` marks the default. |
+| `gentle-shell envs new <name>` | Creates the env without launching it. Its first launch installs the companion packages, the same as any new `--home`. |
+| `gentle-shell --env <name> [...]` | Launches, sets up (`--env <name> setup`), or runs pi subcommands (`--env <name> install npm:x`) in that env. |
+
+The default env is stored as the ordinary persisted `home` path, so a plain `gentle-shell` opens it, and `gentle-shell home link|isolated|<path>` replaces it. Envs are separate homes, not sandboxes. They share the repository you work in, `~/.pi/gentle-ai/persona.json`, and `~/.gentle-ai/state.json`, like every other home. `self-uninstall` does not remove `~/.gentle-shell/envs`.
 
 ### Managing packages
 
