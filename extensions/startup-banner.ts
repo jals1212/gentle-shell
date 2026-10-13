@@ -7,8 +7,9 @@ import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { resolveAnimationPolicy } from "../lib/animation-policy.ts";
 import { PI_SUBCOMMANDS } from "../lib/gentle-shell-launcher.ts";
-import { bundledGentlePiConfigHome } from "../lib/gentle-shell-bundled.ts";
 import { ROSE_ART as ROSE_LARGE_RAW } from "../lib/gentle-brand.ts";
+import { gentlePiConfigHomeKeepingEmpty } from "../lib/agent-home.ts";
+import type { ConfigCategory } from "../lib/gentle-config-scope.ts";
 
 
 export type BannerColor = "pink" | "cyan" | "yellow" | "green";
@@ -48,11 +49,11 @@ function rgb(r: number, g: number, b: number, text: string): string {
   return `\x1b[38;2;${r};${g};${b}m${text}\x1b[39m`;
 }
 
-function gentleAiConfigHome(): string {
-  return bundledGentlePiConfigHome(process.env) ?? process.env.GENTLE_PI_CONFIG_HOME ?? join(os.homedir(), ".pi", "gentle-ai");
+function gentleAiConfigHome(category: ConfigCategory = "appearance"): string {
+  return gentlePiConfigHomeKeepingEmpty(process.env, category);
 }
 
-function bannerConfigPath(configHome = gentleAiConfigHome()): string {
+function bannerConfigPath(configHome = gentleAiConfigHome("appearance")): string {
   return join(configHome, "banner.json");
 }
 
@@ -68,7 +69,7 @@ function normalizeBannerConfig(value: unknown): BannerConfig {
 
 // Modal mutations must not turn an unreadable or malformed existing file into defaults.
 // Legacy banner commands retain their original tolerant read behavior below.
-export async function readBannerConfigForEdit(configHome = gentleAiConfigHome()): Promise<BannerConfig> {
+export async function readBannerConfigForEdit(configHome = gentleAiConfigHome("appearance")): Promise<BannerConfig> {
   const path = bannerConfigPath(configHome);
   let raw: string;
   try {
@@ -87,7 +88,7 @@ export async function readBannerConfigForEdit(configHome = gentleAiConfigHome())
   return { showRose: config.showRose, showTextLogo: config.showTextLogo, color: config.color as BannerColor };
 }
 
-export async function readBannerConfig(configHome = gentleAiConfigHome()): Promise<BannerConfig> {
+export async function readBannerConfig(configHome = gentleAiConfigHome("appearance")): Promise<BannerConfig> {
   try {
     return normalizeBannerConfig(JSON.parse(await readFile(bannerConfigPath(configHome), "utf8")));
   } catch {
@@ -95,7 +96,7 @@ export async function readBannerConfig(configHome = gentleAiConfigHome()): Promi
   }
 }
 
-export async function writeBannerConfig(config: BannerConfig, configHome = gentleAiConfigHome()): Promise<void> {
+export async function writeBannerConfig(config: BannerConfig, configHome = gentleAiConfigHome("appearance")): Promise<void> {
   const path = bannerConfigPath(configHome);
   await mkdir(join(path, ".."), { recursive: true });
   await writeFile(path, `${JSON.stringify(config, null, 2)}\n`, "utf8");

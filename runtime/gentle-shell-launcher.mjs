@@ -2,6 +2,7 @@
 import { isAbsolute, join, resolve as resolvePath } from "node:path";
 import { CHILD_PACKAGE_INJECTION_ENV, encodeChildPackageInjection,                            } from "./child-package-injection.mjs";
 import { ENV_NAME_ENV, envDir, envNameForDir, envsRoot, validateEnvName } from "./gentle-shell-envs.mjs";
+import {                      ENV_CONFIG_HOME_ENV, ENV_OWN_CONFIG_ENV } from "./gentle-config-scope.mjs";
 
 export { ENV_NAME_ENV };
 
@@ -197,6 +198,9 @@ export function parseLauncherArgs(argv          )                     {
 }
 
 // --- home resolution -------------------------------------------------------
+
+
+
 
 
 
@@ -1016,6 +1020,16 @@ export function buildPiInvocation(input                        )               {
 	// from inside another env's session) must never label a different home.
 	if (input.home.env === undefined) delete env[ENV_NAME_ENV];
 	else env[ENV_NAME_ENV] = input.home.env;
+	// Same rule for the env's config scope: only an env that owns categories
+	// sets it, so an outer session's scope never reaches another home.
+	const ownConfig = input.home.env === undefined ? [] : (input.home.ownConfig ?? []);
+	if (ownConfig.length === 0) {
+		delete env[ENV_CONFIG_HOME_ENV];
+		delete env[ENV_OWN_CONFIG_ENV];
+	} else {
+		env[ENV_CONFIG_HOME_ENV] = join(input.home.dir, "gentle-ai");
+		env[ENV_OWN_CONFIG_ENV] = ownConfig.join(",");
+	}
 	if (childInjection === undefined) delete env[CHILD_PACKAGE_INJECTION_ENV];
 	else env[CHILD_PACKAGE_INJECTION_ENV] = encodeChildPackageInjection(childInjection);
 

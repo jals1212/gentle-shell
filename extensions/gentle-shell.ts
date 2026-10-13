@@ -30,8 +30,7 @@ import { DOUBLE_ESC_CANCEL_HINT, floatPromptRow, framePromptLines, resolvePrompt
 import { oddPhaseRegistry } from "../lib/odd-phase.ts";
 import { inferOddPhase } from "../lib/odd-phase-inference.ts";
 import { isInteractiveMode } from "../lib/rpc-host.ts";
-import { gentlePiConfigHome } from "../lib/agent-home.ts";
-import { bundledGentlePiConfigHome } from "../lib/gentle-shell-bundled.ts";
+import { gentlePiConfigHome, gentlePiConfigHomeKeepingEmpty } from "../lib/agent-home.ts";
 import { isNanAdaptiveReasoningModel } from "../lib/nan-provider.ts";
 import { resolveAnimationPolicy, writeAnimationPolicy, type AnimationPolicy } from "../lib/animation-policy.ts";
 import { resolveVimPolicy, writeVimPolicy, type VimPolicy } from "../lib/vim-policy.ts";
@@ -183,7 +182,7 @@ export type ActiveProfileReader = (() => string | undefined) & {
 // Unbound reads retain the global file-identity cache, including atomic replacements.
 // Bound reads are snapshots: no filesystem or Git work is done during a frame.
 export function createActiveProfileReader(env: NodeJS.ProcessEnv = process.env): ActiveProfileReader {
-	const path = profilesFilePath(bundledGentlePiConfigHome(env) ?? env.GENTLE_PI_CONFIG_HOME ?? join(os.homedir(), ".pi", "gentle-ai"));
+	const path = profilesFilePath(gentlePiConfigHomeKeepingEmpty(env, "models"));
 	let fingerprint: string | undefined;
 	let name: string | undefined;
 	let bound = false;
@@ -218,7 +217,7 @@ export function createActiveProfileReader(env: NodeJS.ProcessEnv = process.env):
 		const next = cwd === undefined ? global() : sessionProfileLabel(resolveSessionProfile({
 			sessionId,
 			cwd,
-			configHome: bundledGentlePiConfigHome(env) ?? env.GENTLE_PI_CONFIG_HOME ?? join(os.homedir(), ".pi", "gentle-ai"),
+			configHome: gentlePiConfigHomeKeepingEmpty(env, "models"),
 			resolveWorktree: () => identity,
 			env,
 		}));
@@ -1574,7 +1573,7 @@ export default function gentleShell(pi: ExtensionAPI, env: NodeJS.ProcessEnv = p
 	};
 	// One spelling of the config home, so the pin resolver, the global profiles
 	// store and the profile reader cannot drift onto two different stores.
-	const usageConfigHome = gentlePiConfigHome(env);
+	const usageConfigHome = gentlePiConfigHome(env, "models");
 	const usageFetchTimeout = usageFetchTimeoutMs(env);
 	// The subagent routing in force for this session, through the same single
 	// rule launches use (gentle-shell#1064): explicit Enter binding, then the
@@ -1776,8 +1775,12 @@ export default function gentleShell(pi: ExtensionAPI, env: NodeJS.ProcessEnv = p
 	// re-syncs this cache from disk first, so status, the no-argument toggle
 	// direction, and the Esc gate always describe the same effective policy
 	// even when another session or a hand edit changed the file mid-session.
-	const doubleEscCancelConfigHome = gentlePiConfigHome(env);
-	const animationOptions = { gentlePiConfigHome: doubleEscCancelConfigHome };
+	// Two config categories live side by side here (lib/gentle-config-scope.ts):
+	// behavior (double Esc, history capture) and appearance (animations, Vim,
+	// cards, visual settings and profiles, banner). A named env may own either.
+	const doubleEscCancelConfigHome = gentlePiConfigHome(env, "behavior");
+	const appearanceConfigHome = gentlePiConfigHome(env, "appearance");
+	const animationOptions = { gentlePiConfigHome: appearanceConfigHome };
 	let animationPolicy = resolveAnimationPolicy(animationOptions).policy;
 	let vimPolicy = resolveVimPolicy(animationOptions).policy;
 	// Conversation cards read the style from a process-wide slot; the saved
@@ -2111,9 +2114,9 @@ export default function gentleShell(pi: ExtensionAPI, env: NodeJS.ProcessEnv = p
 				if (closeCustomize === close) closeCustomize = undefined;
 			};
 			closeCustomize = close;
-			const home = { gentlePiConfigHome: doubleEscCancelConfigHome };
+			const home = { gentlePiConfigHome: appearanceConfigHome };
 			const rows: CustomizeRow[] = [];
-			const bannerHome = doubleEscCancelConfigHome;
+			const bannerHome = appearanceConfigHome;
 			let banner = await readBannerConfig(bannerHome).catch(error => { close(); throw error; });
 			if (closed) return;
 			let activeTheme = ctx.ui.theme.name;
@@ -2189,7 +2192,7 @@ export default function gentleShell(pi: ExtensionAPI, env: NodeJS.ProcessEnv = p
 				if (current.malformed || current.readError) throw new Error(`Cannot update unreadable or malformed visual settings: ${current.globalFile}`);
 				writeVisualSettings(change(current.settings), home);
 				refreshVisual();
-				pi.events.emit(VISUAL_SETTINGS_CHANGED, { configHome: doubleEscCancelConfigHome });
+				pi.events.emit(VISUAL_SETTINGS_CHANGED, { configHome: appearanceConfigHome });
 			};
 			const visual = () => resolveVisualSettings(home).settings;
 			const pending = "Preference saved and applied.";
@@ -2377,7 +2380,7 @@ export default function gentleShell(pi: ExtensionAPI, env: NodeJS.ProcessEnv = p
 				try {
 					writeVisualSettings(structuredClone(DEFAULT_VISUAL_SETTINGS), home);
 					refreshVisual();
-					pi.events.emit(VISUAL_SETTINGS_CHANGED, { configHome: doubleEscCancelConfigHome });
+					pi.events.emit(VISUAL_SETTINGS_CHANGED, { configHome: appearanceConfigHome });
 					changed.push("visual");
 					await writeBannerConfig({ ...DEFAULT_BANNER_CONFIG }, bannerHome);
 					banner = { ...DEFAULT_BANNER_CONFIG };
@@ -2424,7 +2427,7 @@ export default function gentleShell(pi: ExtensionAPI, env: NodeJS.ProcessEnv = p
 						if (current.malformed || current.readError) throw new Error("Visual settings unreadable.");
 						writeVisualSettings(profile.visual, home);
 						refreshVisual();
-						pi.events.emit(VISUAL_SETTINGS_CHANGED, { configHome: doubleEscCancelConfigHome });
+						pi.events.emit(VISUAL_SETTINGS_CHANGED, { configHome: appearanceConfigHome });
 					});
 					await step("banner", async () => { await readBannerConfigForEdit(bannerHome); await writeBannerConfig(profile.banner, bannerHome); banner = profile.banner; });
 					await step("animation", () => { writeAnimationPolicy(profile.animationPolicy, animationOptions); animationPolicy = profile.animationPolicy; prompt?.setAnimationPolicy(animationPolicy); });
