@@ -44,5 +44,6 @@ Today a separate home needs `--home <path>` every time, with no registry, no nam
   - T7 `86a92eba6`: the gate form after the name and the `c` editor; the detail card's Config row. It also fixed summarizeEnv dropping `own`.
   - Docs `92dab27a7`.
   - Real standalone: an env owning models & profiles shows its own profile (`scopedprof`) in the header and Status; the base home keeps `baseprof`.
+- Decision (user): Engram memory stays shared across all envs for now; per-env memory is deferred, not planned in this change.
 - Known limits: the bundled `node_modules` pi is 1.0.0 (< required 1.2.0), so manual smoke used `GENTLE_SHELL_PI=~/.pi/agent/bin/pi`; `pnpm` refuses in the symlinked worktree, scripts run with `node` directly; Windows TTY path untested.
 - Explored `lib/gentle-shell-launcher.ts` (parse/resolve/config), `bin/gentle-shell.mjs` (main flow, home bootstrap, auto-provision, setup), docs `readme-reference.md` launcher section.
