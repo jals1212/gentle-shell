@@ -163,3 +163,8 @@ test("activeEnvName accepts only a valid env name from the environment", async (
 	assert.equal(activeEnvName({ GENTLE_SHELL_ENV: "" }), undefined);
 	assert.equal(activeEnvName({ GENTLE_SHELL_ENV: "\x1b[31mevil" }), undefined);
 });
+
+test("summarizeEnv reports whether the home was ever set up", () => {
+	assert.equal(summarizeEnv({ name: "x", dir: "/e/x", isDefault: false, sessionCount: 0 }).setUp, false);
+	assert.equal(summarizeEnv({ name: "x", dir: "/e/x", isDefault: false, sessionCount: 0, provisioned: { gentleAi: "1", at: "2026-01-01" } }).setUp, true);
+});
