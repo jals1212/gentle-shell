@@ -918,9 +918,10 @@ async function runEnvsManager(root) {
 		if (effect.kind === "launch") return effect.name;
 		let code;
 		if (effect.kind === "setup") {
-			process.stdout.write(`gentle-shell: setting up env ${effect.name}\n`);
+			process.stdout.write(`gentle-shell: setting up env ${effect.name}; downloads can take a few minutes (Ctrl-C cancels)\n`);
 			code = runLauncherForEnv(effect.name, ["setup"]);
 		} else if (effect.kind === "install") {
+			process.stdout.write(`gentle-shell: installing ${effect.source} into env ${effect.name} (Ctrl-C cancels)\n`);
 			code = runLauncherForEnv(effect.name, ["install", effect.source]);
 		} else {
 			// Pi signs in from inside a session (/login); outside one it can
