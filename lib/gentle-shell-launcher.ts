@@ -1235,7 +1235,7 @@ export function helpText(): string {
 		"  home             Print or persist the effective home mode (link, isolated, or a path).",
 		"  envs             Manage named envs: on a terminal, a full-screen manager to create,",
 		"                   rename, delete, launch, set the default, set up, install into and",
-		"                   check sign-ins of each env. 'envs list' prints them (* = default);",
+		"                   check sign-ins of each env. 'envs list' prints them, marking (default);",
 		"                   'envs new <name>' creates one. Envs are separate homes, not sandboxes.",
 		"  setup            Provision the resolved home with the gentle-ai companion packages",
 		"                   (runs the package-local gentle-ai 'install --agent pi --scope global').",
