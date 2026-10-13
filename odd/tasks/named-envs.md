@@ -33,5 +33,6 @@ Today a separate home needs `--home <path>` every time, with no registry, no nam
 ## Evidence and progress
 - PTY smoke via `script` against a temp HOME: create, set default, rename (default + config follow), delete with typed confirmation (wrong name rejected, config cleaned), enter launches pi with `PI_CODING_AGENT_DIR=<env dir>`, `i` runs `install` in the env and returns to the manager.
 - Found and fixed during smoke: pty reporting 0x0 size rendered a blank screen (fallback to 80x24).
+- User report: setup from the manager looked hung in a fresh worktree (package-local gentle-ai v4.1.1 missing, ~18 KB/s download with no output). Added TTY-only download progress (installer `onProgress`, `scripts/download-progress.mjs`) plus a Ctrl-C hint; verified in a pty with a simulated installer (bar to 100%, cleared, then the usual line) and unchanged non-TTY output.
 - Known limits: the bundled `node_modules` pi is 1.0.0 (< required 1.2.0), so manual smoke used `GENTLE_SHELL_PI=~/.pi/agent/bin/pi`; `pnpm` refuses in the symlinked worktree, scripts run with `node` directly; Windows TTY path untested.
 - Explored `lib/gentle-shell-launcher.ts` (parse/resolve/config), `bin/gentle-shell.mjs` (main flow, home bootstrap, auto-provision, setup), docs `readme-reference.md` launcher section.
