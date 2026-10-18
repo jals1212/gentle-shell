@@ -783,6 +783,10 @@ async function run() {
 		assert.equal(sensitiveWrite.block, true);
 		const sensitiveEdit = await toolHook({ toolName: "edit", input: { edits: [], path: join(toolCwd, "id_rsa.pem") } }, createCtx(toolCwd));
 		assert.equal(sensitiveEdit.block, true);
+		// An env template is not sensitive by name; the real env file, and a template under a sensitive directory, stay blocked.
+		assert.equal(await toolHook({ toolName: "read", input: { path: join(toolCwd, ".env.example") } }, createCtx(toolCwd)), undefined);
+		assert.equal((await toolHook({ toolName: "write", input: { path: join(toolCwd, ".env"), content: "x" } }, createCtx(toolCwd))).block, true);
+		assert.equal((await toolHook({ toolName: "read", input: { path: join(toolCwd, "secrets", ".env.example") } }, createCtx(toolCwd))).block, true);
 		assert.equal(await toolHook({ toolName: "read", input: { path: join(toolCwd, "src", "index.ts") } }, createCtx(toolCwd)), undefined);
 		const dangerousReviewCtx = createCtx(toolCwd, true, "dangerous-review-session");
 		const needsConfirm = await toolHook(

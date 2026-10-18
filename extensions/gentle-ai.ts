@@ -274,6 +274,7 @@ import {
 } from "../lib/review-session-standing-permission.ts";
 import { herdrSetupHint } from "../lib/herdr-activity.ts";
 import { isInteractiveMode } from "../lib/rpc-host.ts";
+import { isAllowedSensitivePath, loadSensitivePathAllow } from "../lib/sensitive-path-allow.ts";
 
 const GRAPH_V1_ORDINARY_READ_ONLY = "Graph-v1 ordinary review authority is read-only; use native compact-v2 review operations";
 const PACKAGE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -1904,7 +1905,15 @@ function evaluateSensitivePathTool(
 	input: unknown,
 ): ToolCallEventResult | undefined {
 	if (!PATH_GUARDED_TOOL_NAMES.has(toolName)) return undefined;
-	const sensitivePath = collectPathInputs(input).find(isSensitivePath);
+	// An env template, or a name in the global sensitivePathAllow list, lifts
+	// only its file-name match (lib/sensitive-path-allow.ts). The list is read
+	// per call so an edit applies at once; subagents run this same guard.
+	let allow: ReadonlySet<string> | undefined;
+	const lifted = (path: string) => {
+		allow ??= loadSensitivePathAllow(gentleAiConfigHome());
+		return isAllowedSensitivePath(normalizePolicyPath(path), allow, isSensitivePath);
+	};
+	const sensitivePath = collectPathInputs(input).find((path) => isSensitivePath(path) && !lifted(path));
 	if (!sensitivePath) return undefined;
 	return {
 		block: true,
@@ -9610,6 +9619,7 @@ async function executeReviewControllerOperation(
 
 /** @internal */
 export const __testing = {
+	evaluateSensitivePathTool,
 	parseReviewControllerParameters,
 	parseReviewCaptureParameters,
 	parseReviewCaptureGroupParameters,
